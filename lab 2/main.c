@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
-#define SIZE 6
+#define SIZE 8
 
 int* sabArray(int, int, int*);
 int** sequenceIncreasingNumbers(int*, int*);
@@ -39,13 +39,23 @@ int** sequenceIncreasingNumbers(int* number, int* lines)
 
     outNumber[0] = 0;
   
-    for (int i = 0; i < SIZE; i++)
+    for (int i = 0; i < (SIZE - 1); i++)
     {
         if (number[i] < number[i + 1])
         {
             startI = i;
             while (number[i] < number[i + 1])
+            {
                 i++;
+                if (i == SIZE)
+                    break;
+            }
+            if (i == SIZE - 2)
+            {
+                outNumber[0]++;
+                outNumber = realloc(outNumber, sizeof(int) * (outNumber[0] + 1));
+                outNumber[outNumber[0]] = number[i + 1];
+            }
             endI = i;
             size++;
 
@@ -55,6 +65,11 @@ int** sequenceIncreasingNumbers(int* number, int* lines)
             outNumber[0]++;
             outNumber = realloc(outNumber, sizeof(int) * (outNumber[0] + 1));
             outNumber[outNumber[0]] = number[i];
+            if (i + 1 == SIZE - 1){
+                outNumber[0]++;
+                outNumber = realloc(outNumber, sizeof(int) * (outNumber[0] + 1));
+                outNumber[outNumber[0]] = number[i + 1];
+            }
         }
     }
   
