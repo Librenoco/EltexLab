@@ -25,7 +25,7 @@ int main()
         {
             c = write(fd[1], "h", 2);
             b = read(fd[0], a, 1);
-            size++; //так как записываем 2 байта
+            size++;
             printf("%dKb\n", (int)(size / 1024));
         } while (c != b);
     }
