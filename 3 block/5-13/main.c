@@ -9,26 +9,16 @@ int main()
 {
     int pfd = 0;
     int fd[2];
-    char a[100];
     int size = 0;
-    int c = 0;
-    int b = 0;
 
-    if ((pfd = pipe(fd)) < 0)
+    pipe(fd);
+
+    do
     {
-        printf("ошибка");
-        exit(1);
-    }
-    else
-    {
-        do
-        {
-            c = write(fd[1], "h", 2);
-            b = read(fd[0], a, 1);
-            size++;
-            printf("%dKb\n", (int)(size / 1024));
-        } while (c != b);
-    }
-    
+        write(fd[1], "h", 1);
+        size++;
+        printf("%dKb\n", (int)(size / 1024));
+    } while (1);
+
     return 0;
 }
