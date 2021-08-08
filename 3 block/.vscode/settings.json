@@ -2,6 +2,10 @@
     "files.associations": {
         "ipc.h": "c",
         "types.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "sem.h": "c",
+        "shm.h": "c",
+        "string.h": "c",
+        "errno.h": "c"
     }
 }
