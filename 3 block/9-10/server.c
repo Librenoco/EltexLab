@@ -52,7 +52,7 @@ int main()
     или создать ее, если она еще не существует, с правами доступа
     read & write для всех пользователей */
 
-    if(msqid = msgget(key, 0666 | IPC_CREAT) < 0)
+    if((msqid = msgget(key, 0666 | IPC_CREAT)) < 0)
     {
         printf("Can\'t get msqid\n");
         exit(-1);
@@ -62,9 +62,11 @@ int main()
     {
 
         /* В бесконечном цикле принимаем сообщения любого типа в порядке FIFO с максимальной длиной информативной части 81 символ до тех пор, пока не поступит сообщение с типом LAST_MESSAGE*/
-        maxlen = sizeof(mybuf);
+        maxlen = sizeof(struct mymsgbuf);
+
         printf("%d\n",maxlen);
-        if(len = msgrcv(msqid, (struct msgbuf *) &mybuf, maxlen, 0, 0) < 0)
+
+        if((len = msgrcv(msqid, (struct msgbuf *) &mybuf, maxlen, 0, 0)) < 0)
         {
             printf("Can\'t receive message from queue\n");
             exit(-1);

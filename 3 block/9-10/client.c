@@ -72,7 +72,7 @@ int main()
         strcpy(mybuf.info.chinfo, "This is text message");
         mybuf.info.finfo = 1.1;
         mybuf.info.sinfo = 1;
-        len = sizeof(mybuf.info);
+        len = sizeof(struct mymsgbuf);
 
         /* Отсылаем сообщение. В случае ошибки сообщаем об этом и удаляем очередь сообщений из системы. */
 
