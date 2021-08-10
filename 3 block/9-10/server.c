@@ -1,15 +1,9 @@
 /* Программа 2 для иллюстрации работы с очередями сообщений */
 
- 
-
-/* Эта программа получает доступ к очереди сообщений,
-и читает из нее сообщения с любым типом в порядке FIFO до тех пор,
-пока не получит сообщение с типом 255, которое будет служить
-сигналом прекращения работы. */
-
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,8 +15,7 @@ struct mymsgbuf
     long mtype;
     struct 
     {
-        short sinfo;
-        float finfo;
+        int pidID;
         char  chinfo[50];
     } info;
 } mybuf;
@@ -64,22 +57,32 @@ int main()
         /* В бесконечном цикле принимаем сообщения любого типа в порядке FIFO с максимальной длиной информативной части 81 символ до тех пор, пока не поступит сообщение с типом LAST_MESSAGE*/
         maxlen = sizeof(struct mymsgbuf);
 
-        printf("%d\n",maxlen);
-
-        if((len = msgrcv(msqid, (struct msgbuf *) &mybuf, maxlen, 0, 0)) < 0)
+        if((len = msgrcv(msqid, (struct msgbuf *) &mybuf, maxlen, 1, 0)) < 0)
         {
             printf("Can\'t receive message from queue\n");
             exit(-1);
         }
-
-        /* Если принятое сообщение имеет тип LAST_MESSAGE, прекращаем работу и удаляем очередь сообщений из системы.
-        В противном случае печатаем текст принятого сообщения. */
-        if (mybuf.mtype == LAST_MESSAGE)
+        switch (fork())
         {
-            msgctl(msqid, IPC_RMID, (struct msqid_ds *) NULL);
-            exit(0);
+            case -1: /* при вызове fork() возникла ошибка*/ perror("Error");
+            case 0:
+            {
+                mybuf.mtype = mybuf.info.pidID;
+                mybuf.info.pidID = 1;
+                strcpy(mybuf.info.chinfo, "This is text message (server)");
+
+                if (msgsnd(msqid, (struct msgbuf *)&mybuf, len, 0) < 0)
+                {
+                    printf("Can\'t send message to queue\n");
+                    msgctl(msqid, IPC_RMID, (struct msqid_ds *)NULL);
+                    exit(-1);
+                }
+                break;
+            }
+            default : /*это код родительского процесса*/ 
+                    printf("message type = %ld, info = %s, pidID = %d\n", mybuf.mtype, mybuf.info.chinfo, mybuf.info.pidID);
+                    break;
         }
-        printf("message type = %ld, info = %s, float = %f, short = %hd\n", mybuf.mtype, mybuf.info.chinfo, mybuf.info.finfo, mybuf.info.sinfo);
     }
 
     return 0; /* Исключительно для отсутствия warning'ов при компиляции. */

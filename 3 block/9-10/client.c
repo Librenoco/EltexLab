@@ -1,15 +1,9 @@
 /* Программа 1 для иллюстрации работы с очередями сообщений */
 
- 
-
-/* Эта программа получает доступ к очереди сообщений,
-отправляет в нее 5 текстовых сообщений с типом 1
-и одно пустое сообщение с типом 255, которое будет служить
-для программы 2 сигналом прекращения работы. */
-
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,11 +17,11 @@ struct mymsgbuf
     long mtype;
     struct 
     {
-        short sinfo;
-        float finfo;
+        int pidID;
         char  chinfo[50];
     } info;
 } mybuf;
+
 
 int main()
 {
@@ -61,33 +55,12 @@ int main()
         exit(-1);
     }
 
-    /* Посылаем в цикле 5 сообщений с типом 1 в очередь сообщений, идентифицируемую msqid.*/
+    mybuf.mtype = 1;
+    mybuf.info.pidID = getpid();
+    strcpy(mybuf.info.chinfo, "This is text message");
+    len = sizeof(struct mymsgbuf);
 
-    for (i = 1; i <= 5; i++)
-    {
-
-        /* Сначала заполняем структуру для нашего сообщения и определяем длину информативной части */
-
-        mybuf.mtype = 1;
-        strcpy(mybuf.info.chinfo, "This is text message");
-        mybuf.info.finfo = 1.1;
-        mybuf.info.sinfo = 1;
-        len = sizeof(struct mymsgbuf);
-
-        /* Отсылаем сообщение. В случае ошибки сообщаем об этом и удаляем очередь сообщений из системы. */
-
-        if (msgsnd(msqid, (struct msgbuf *) &mybuf, len, 0) < 0)
-        {
-            printf("Can\'t send message to queue\n");
-            msgctl(msqid, IPC_RMID, (struct msqid_ds *) NULL);
-            exit(-1);
-        }
-    }
-
-    /* Отсылаем сообщение, которое заставит получающий процесс прекратить работу, с типом LAST_MESSAGE и длиной 0 */
-
-    mybuf.mtype = LAST_MESSAGE;
-    len = 0;
+    /* Отсылаем сообщение. В случае ошибки сообщаем об этом и удаляем очередь сообщений из системы. */
 
     if (msgsnd(msqid, (struct msgbuf *) &mybuf, len, 0) < 0)
     {
@@ -95,6 +68,13 @@ int main()
         msgctl(msqid, IPC_RMID, (struct msqid_ds *) NULL);
         exit(-1);
     }
+
+    if ((len = msgrcv(msqid, (struct msgbuf *)&mybuf, len, mybuf.info.pidID, 0)) < 0)
+    {
+        printf("Can\'t receive message from queue\n");
+        exit(-1);
+    }
+    printf("message type = %ld, info = %s, pidID = %d\n", mybuf.mtype, mybuf.info.chinfo, mybuf.info.pidID);
 
     return 0;
 }
