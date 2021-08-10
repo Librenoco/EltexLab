@@ -1,19 +1,15 @@
 /* Программа 2 для иллюстрации некорректности работы с разделяемой памятью и семафором*/
-/* Необходимо запускать вместе с первой программой*/
 /* Разделяемая память для массива из 3-х целых чисел. Первый элемент массива является счетчиком 
 числа запусков программы 1, т. е. данной программы, второй элемент массива - 
 счетчиком числа запусков программы 2, третий элемент массива - 
 счетчиком числа запусков обеих программ*/
 
-#include <sys/sem.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include <stdio.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdlib.h>
 
 int main()
@@ -33,8 +29,23 @@ int main()
         printf("Can\'t generate key\n");
         exit(-1);
     }
-    semid = semget(key, 1, 0666 | IPC_CREAT);
-    
+
+    if ((semid = semget(key, 1, 0666 | IPC_CREAT | IPC_EXCL)) < 0)
+    {
+        if (errno != EEXIST)
+        {
+            exit(-2);
+        }
+        else
+        {
+            semid = semget(key, 1, 0);
+        }
+    }
+    else
+    {
+        semctl(semid, 0, SETVAL, (int)1);
+    }
+
     /* Пытаемся эксклюзивно создать разделяемую память для сгенерированного ключа, т.е. если для этого ключа она уже существует, то системный вызов вернет отрицательное значение. Размер памяти определяем как размер массива из 3-х целых переменных, права доступа 0666 - чтение и запись разрешены для всех */
     if ((shmid = shmget(key, 3 * sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) < 0)
     {
@@ -67,7 +78,7 @@ int main()
     sops.sem_num = 0;
     sops.sem_flg = 0;
 
-    sops.sem_op = -2;
+    sops.sem_op = -1;
     semop(semid, &sops, 1);
 
     if (new)
@@ -83,17 +94,18 @@ int main()
         array[2] += 1;
     }
    
-    sops.sem_op = -1;
-    semop(semid, &sops, 1);
-    
     /* Печатаем новые значения счетчиков, удаляем разделяемую память из адресного пространства текущего процесса и завершаем работу */
     printf("Program 1 was spawn %d times, program 2 - %d times, total - %d times\n",
            array[0], array[1], array[2]);
 
+    sops.sem_op = 1;
+    semop(semid, &sops, 1);
+    
     if (shmdt(array) < 0)
     {
         printf("Can't detach shared memory\n");
         exit(-1);
     }
+    
     return 0;
 }
