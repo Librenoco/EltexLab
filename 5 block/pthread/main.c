@@ -21,9 +21,13 @@ pthread_mutex_t mutex;
 void *minus(void *args)
 {
     int loc_id = *(int *)args;
+    
+    srand(time(NULL) * loc_id);
+    
     while (1)
     {
-        int random = rand() % 1; 
+        int loc_lastPortion;
+        int random = rand() % 4; 
         sleep(mine.workTime + random);
         
         pthread_mutex_lock(&mutex);
@@ -32,8 +36,9 @@ void *minus(void *args)
             pthread_mutex_unlock(&mutex);
             break;
         }
-        mine.totalGold = mine.totalGold - mine.portionGold;
-        printf("mineGold ID = %d GOLD = %d\n", loc_id, mine.totalGold);
+        loc_lastPortion = mine.totalGold - mine.portionGold;
+        mine.totalGold = (loc_lastPortion < 0) ? 0 : loc_lastPortion;
+        printf("Worker №%d, total gold in the mine = %d\n", loc_id, mine.totalGold);
         
         pthread_mutex_unlock(&mutex);
     }
@@ -47,9 +52,17 @@ int main()
     pthread_t threads[NUM_OF_THREADS];
     size_t i;
     int id[NUM_OF_THREADS] = {0};
-    
-    printf("MINEGOLD = %d\n", mine.totalGold);
 
+    printf("Enter mine gold = ");
+    scanf("%d", &mine.totalGold);
+
+    printf("Enter portion gold = ");
+    scanf("%d", &mine.portionGold);
+
+    printf("Enter work time (1-5) = ");
+    scanf("%d", &mine.workTime);
+
+    printf("\nMINEGOLD = %d\n", mine.totalGold);
     //Инициализация мьютекса
     pthread_mutex_init(&mutex, NULL);
 
